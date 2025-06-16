@@ -1,4 +1,41 @@
-venv/
-*.pyc
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
 db.sqlite3
+
+# Django migrations
+**/migrations/*.py
+**/migrations/*.pyc
+!**/migrations/__init__.py
+
+# Static and media files
+/staticfiles/
+/media/
+
+# VSCode or PyCharm
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
