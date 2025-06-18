@@ -1,0 +1,21 @@
+{% extends 'hotel/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Booking Details</h2>
+  <ul class="list-group">
+    <li class="list-group-item"><strong>Customer:</strong> {{ booking.customer_name }}</li>
+    <li class="list-group-item"><strong>Contact:</strong> {{ booking.contact }}</li>
+    <li class="list-group-item"><strong>Room:</strong> Room {{ booking.room.number }} - {{ booking.room.get_type_display }}</li>
+    <li class="list-group-item"><strong>Check-in:</strong> {{ booking.check_in }}</li>
+    <li class="list-group-item"><strong>Check-out:</strong> {{ booking.check_out }}</li>
+    <li class="list-group-item"><strong>Status:</strong> 
+      {% if booking.is_checked_in %}
+        Checked-In
+      {% else %}
+        Not Checked-In
+      {% endif %}
+    </li>
+  </ul>
+</div>
+{% endblock %}

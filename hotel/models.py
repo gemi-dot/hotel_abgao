@@ -18,6 +18,12 @@ class Room(models.Model):
 
 class Booking(models.Model):
     customer_name = models.CharField(max_length=100)
+
+    #contact = models.CharField(max_length=50)  # Add this if not present
+    contact = models.CharField(max_length=100, default='N/A', blank=True)
+
+
+
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     check_in = models.DateField()
     check_out = models.DateField()

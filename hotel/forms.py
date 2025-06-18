@@ -9,4 +9,4 @@ class RoomForm(forms.ModelForm):
 class BookingForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = ['customer_name', 'room', 'check_in', 'check_out', 'is_checked_in']
+        fields = ['contact', 'customer_name', 'room', 'check_in', 'check_out', 'is_checked_in']

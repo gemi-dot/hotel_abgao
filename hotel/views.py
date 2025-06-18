@@ -2,12 +2,16 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Room, Booking
 from .forms import RoomForm, BookingForm
+from django.contrib import messages
 
+from django.contrib.auth.decorators import login_required
 
 from django.db.models import Q
 
 from datetime import datetime
 
+
+from django.contrib.auth.decorators import login_required
 
 
 # DASHBOARD
@@ -18,11 +22,16 @@ def dashboard(request):
     total_bookings = Booking.objects.count()
     checked_in = Booking.objects.filter(is_checked_in=True).count()  # Correct field name
 
+     # Add this 👇
+    recent_bookings = Booking.objects.select_related('room').order_by('-check_in')[:5]
+
+
     return render(request, 'hotel/dashboard.html', {
         'total_rooms': total_rooms,
         'available_rooms': available_rooms,
         'total_bookings': total_bookings,
         'checked_in': checked_in,
+        'recent_bookings': recent_bookings,  # 👈 YOU FORGOT THIS
     })
 
 
@@ -56,6 +65,13 @@ def room_delete(request, pk):
     return redirect('room_list')
 
 
+#
+def available_rooms(request):
+    rooms = Room.objects.filter(is_available=True)
+    return render(request, 'hotel/available_rooms.html', {'rooms': rooms})
+#
+
+
 # BOOKING VIEWS
 @login_required
 
@@ -77,14 +93,22 @@ def booking_list(request):
     return render(request, 'hotel/booking_list.html', {'bookings': bookings})
 
 
-
+####
 @login_required
+
 def booking_create(request):
-    form = BookingForm(request.POST or None)
-    if form.is_valid():
-        form.save()
-        return redirect('booking_list')
+    room_id = request.GET.get('room_id')
+    form = BookingForm(request.POST or None, initial={'room': room_id})
+
+    if request.method == 'POST' and form.is_valid():
+        booking = form.save(commit=False)
+        if not booking.room.is_available:
+            messages.error(request, 'This room is not available.')
+        else:
+            booking.save()
+            return redirect('booking_list')
     return render(request, 'hotel/booking_form.html', {'form': form})
+
 
 @login_required
 def toggle_checkin(request, pk):
@@ -100,3 +124,34 @@ def booking_delete(request, pk):
     return redirect('booking_list')
 
 
+def booking_history(request):
+    name = request.GET.get('name')
+    bookings = Booking.objects.filter(customer_name__icontains=name) if name else []
+    return render(request, 'hotel/booking_history.html', {'bookings': bookings, 'name': name})
+
+
+
+@login_required
+def booking_edit(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    form = BookingForm(request.POST or None, instance=booking)
+    if form.is_valid():
+        form.save()
+        return redirect('booking_list')
+    return render(request, 'hotel/booking_form.html', {'form': form})
+
+
+@login_required
+def booking_detail(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    return render(request, 'hotel/booking_detail.html', {'booking': booking})
+
+
+@login_required
+def booking_edit(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    form = BookingForm(request.POST or None, instance=booking)
+    if form.is_valid():
+        form.save()
+        return redirect('booking_list')
+    return render(request, 'hotel/booking_form.html', {'form': form})

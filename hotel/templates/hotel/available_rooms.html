@@ -1,0 +1,16 @@
+{% extends 'hotel/base.html' %}
+{% block content %}
+<h2>Available Rooms</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% for room in rooms %}
+    <div class="p-4 border rounded shadow">
+        <h3 class="text-xl font-semibold">Room {{ room.number }}</h3>
+        <p>Type: {{ room.get_type_display }}</p>
+        <p>Price: Php{{ room.price }}</p>
+        <a href="{% url 'booking_create' %}?room_id={{ room.id }}" class="btn btn-primary mt-2">Book Now</a>
+    </div>
+    {% empty %}
+    <p>No rooms available at the moment.</p>
+    {% endfor %}
+</div>
+{% endblock %}
