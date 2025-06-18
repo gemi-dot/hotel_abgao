@@ -3,15 +3,17 @@ from django.contrib.auth.decorators import login_required
 from .models import Room, Booking
 from .forms import RoomForm, BookingForm
 from django.contrib import messages
-
 from django.contrib.auth.decorators import login_required
-
 from django.db.models import Q
-
 from datetime import datetime
 
 
-from django.contrib.auth.decorators import login_required
+from datetime import datetime, timedelta
+from django.utils import timezone
+
+
+from django.core.paginator import Paginator
+
 
 
 # DASHBOARD
@@ -20,20 +22,44 @@ def dashboard(request):
     total_rooms = Room.objects.count()
     available_rooms = Room.objects.filter(is_available=True).count()
     total_bookings = Booking.objects.count()
-    checked_in = Booking.objects.filter(is_checked_in=True).count()  # Correct field name
+    checked_in = Booking.objects.filter(is_checked_in=True).count()
 
-     # Add this 👇
-    recent_bookings = Booking.objects.select_related('room').order_by('-check_in')[:5]
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    search = request.GET.get('search')
+    room_id = request.GET.get('room')
 
+    bookings = Booking.objects.select_related('room').order_by('-check_in')
+
+    if start_date:
+        bookings = bookings.filter(check_in__gte=start_date)
+    else:
+        week_ago = timezone.now().date() - timedelta(days=7)
+        bookings = bookings.filter(check_in__gte=week_ago)
+
+    if end_date:
+        bookings = bookings.filter(check_in__lte=end_date)
+
+    if room_id:
+        bookings = bookings.filter(room__id=room_id)
+
+    if search:
+        bookings = bookings.filter(customer_name__icontains=search)
+
+    paginator = Paginator(bookings, 10)
+    page_number = request.GET.get('page')
+    recent_bookings = paginator.get_page(page_number)
+
+    rooms = Room.objects.all()  # for dropdown
 
     return render(request, 'hotel/dashboard.html', {
         'total_rooms': total_rooms,
         'available_rooms': available_rooms,
         'total_bookings': total_bookings,
         'checked_in': checked_in,
-        'recent_bookings': recent_bookings,  # 👈 YOU FORGOT THIS
+        'recent_bookings': recent_bookings,
+        'rooms': rooms,
     })
-
 
 # ROOM VIEWS
 @login_required
@@ -90,8 +116,14 @@ def booking_list(request):
     elif status == 'not_checked_in':
         bookings = bookings.filter(is_checked_in=False)
 
-    return render(request, 'hotel/booking_list.html', {'bookings': bookings})
-
+    return render(request, 'hotel/booking_list.html', {
+        'bookings': bookings,
+########        
+        'start_date': start_date,
+        'end_date': end_date,
+        'status': status,        
+        
+        })
 
 ####
 @login_required
@@ -155,3 +187,13 @@ def booking_edit(request, pk):
         form.save()
         return redirect('booking_list')
     return render(request, 'hotel/booking_form.html', {'form': form})
+
+
+
+def booking_delete(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    booking.delete()
+    return redirect('dashboard')
+
+
+
