@@ -5,18 +5,28 @@ from .forms import RoomForm, BookingForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from datetime import datetime
 
 
 from datetime import datetime, timedelta
 from django.utils import timezone
 
-
 from django.core.paginator import Paginator
+
+
+from django.db.models import F
+
+
+from django.db.models import Sum, Avg
+from datetime import datetime
+
+
 
 
 
 # DASHBOARD
+from django.shortcuts import render
+from .models import Room, Booking
+
 @login_required
 def dashboard(request):
     total_rooms = Room.objects.count()
@@ -24,42 +34,30 @@ def dashboard(request):
     total_bookings = Booking.objects.count()
     checked_in = Booking.objects.filter(is_checked_in=True).count()
 
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    search = request.GET.get('search')
-    room_id = request.GET.get('room')
+    # 👇 Refactored stats data
+    stats = [
+        {"title": "Total Rooms", "count": total_rooms, "bg": "primary"},
+        {"title": "Available Rooms", "count": available_rooms, "bg": "success"},
+        {"title": "Total Bookings", "count": total_bookings, "bg": "warning"},
+        {"title": "Checked In", "count": checked_in, "bg": "info"},
+    ]
 
-    bookings = Booking.objects.select_related('room').order_by('-check_in')
-
-    if start_date:
-        bookings = bookings.filter(check_in__gte=start_date)
-    else:
-        week_ago = timezone.now().date() - timedelta(days=7)
-        bookings = bookings.filter(check_in__gte=week_ago)
-
-    if end_date:
-        bookings = bookings.filter(check_in__lte=end_date)
-
-    if room_id:
-        bookings = bookings.filter(room__id=room_id)
-
-    if search:
-        bookings = bookings.filter(customer_name__icontains=search)
-
-    paginator = Paginator(bookings, 10)
-    page_number = request.GET.get('page')
-    recent_bookings = paginator.get_page(page_number)
-
-    rooms = Room.objects.all()  # for dropdown
+    # Other logic...
+    rooms = Room.objects.all()
+    recent_bookings = Booking.objects.select_related("room").order_by("-check_in")[:10]
 
     return render(request, 'hotel/dashboard.html', {
-        'total_rooms': total_rooms,
-        'available_rooms': available_rooms,
-        'total_bookings': total_bookings,
-        'checked_in': checked_in,
-        'recent_bookings': recent_bookings,
-        'rooms': rooms,
+        "stats": stats,
+        "rooms": rooms,
+        "recent_bookings": recent_bookings,
+        # Include for backward compatibility (optional)
+        "total_rooms": total_rooms,
+        "available_rooms": available_rooms,
+        "total_bookings": total_bookings,
+        "checked_in": checked_in,
     })
+
+
 
 # ROOM VIEWS
 @login_required
@@ -195,5 +193,133 @@ def booking_delete(request, pk):
     booking.delete()
     return redirect('dashboard')
 
+######
+@login_required
+def booking_summary(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    status = request.GET.get('status')
+    room_id = request.GET.get('room')
+
+    bookings = Booking.objects.select_related('room').all()
+
+    #if start_date:
+    #    bookings = bookings.filter(check_in__date__gte=start_date)
+    #if end_date:
+    #    bookings = bookings.filter(check_out__date__lte=end_date)
 
 
+    if start_date:
+        bookings = bookings.filter(check_in__gte=start_date)
+    if end_date:
+        bookings = bookings.filter(check_out__lte=end_date)   
+
+
+
+    if status == 'checked_in':
+        bookings = bookings.filter(is_checked_in=True)
+    elif status == 'not_checked_in':
+        bookings = bookings.filter(is_checked_in=False)
+    if room_id:
+        bookings = bookings.filter(room__id=room_id)
+
+    rooms = Room.objects.all()
+
+    return render(request, 'hotel/booking_summary.html', {
+        'bookings': bookings,
+        'rooms': rooms,
+        'start_date': start_date,
+        'end_date': end_date,
+        'status': status,
+        'room_id': room_id,
+    })
+
+#####
+
+
+
+@login_required
+def occupancy_report(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if not start_date or not end_date:
+        today = datetime.today().date()
+        start_date = today.replace(day=1)
+        end_date = today
+    else:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+    total_days = (end_date - start_date).days + 1
+    total_rooms = Room.objects.count()
+    available_room_nights = total_rooms * total_days
+
+    # Bookings that intersect the date range
+    bookings = Booking.objects.filter(
+        check_in__lte=end_date,
+        check_out__gte=start_date
+    )
+
+    # Calculate occupied nights per booking
+    occupied_nights = 0
+    for booking in bookings:
+        overlap_start = max(booking.check_in, start_date)
+        overlap_end = min(booking.check_out, end_date)
+        nights = (overlap_end - overlap_start).days
+        occupied_nights += max(nights, 0)
+
+    occupancy_rate = (occupied_nights / available_room_nights) * 100 if available_room_nights > 0 else 0
+
+    context = {
+        'start_date': start_date,
+        'end_date': end_date,
+        'total_rooms': total_rooms,
+        'available_nights': available_room_nights,
+        'occupied_nights': occupied_nights,
+        'occupancy_rate': round(occupancy_rate, 2),
+    }
+
+    
+    return render(request, 'hotel/occupancy_report.html', context)
+
+
+
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import Booking
+from datetime import datetime
+
+@login_required
+def revenue_report(request):
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    bookings = Booking.objects.select_related('room').all()
+
+    # Parse input dates only if provided
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            bookings = bookings.filter(check_in__gte=start_date)
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            bookings = bookings.filter(check_out__lte=end_date)
+    except ValueError:
+        # Handle invalid date format gracefully
+        start_date = end_date = None
+
+    total_bookings = bookings.count()
+    total_revenue = sum(b.total_price for b in bookings)
+    avg_revenue = total_revenue / total_bookings if total_bookings > 0 else 0
+
+    context = {
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+        'total_bookings': total_bookings,
+        'total_revenue': total_revenue,
+        'avg_revenue': avg_revenue,
+    }
+
+    return render(request, 'hotel/revenue_report.html', context)

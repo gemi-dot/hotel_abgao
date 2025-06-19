@@ -29,6 +29,13 @@ class Booking(models.Model):
     check_out = models.DateField()
     is_checked_in = models.BooleanField(default=False)
 
+    @property
+    def total_price(self):
+        duration = (self.check_out - self.check_in).days
+        return self.room.price * max(duration, 1)  # Avoid zero-day stays
+
+
+
     def __str__(self):
         return f'{self.customer_name} - Room {self.room.number}'
 

@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+from .views import revenue_report
+
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('rooms/', views.room_list, name='room_list'),
@@ -17,5 +19,14 @@ urlpatterns = [
     path('bookings/<int:pk>/checkin/', views.toggle_checkin, name='toggle_checkin'),
 
     path('available-rooms/', views.available_rooms, name='available_rooms'),
+
+    path('reports/booking-summary/', views.booking_summary, name='booking_summary'),
+
+    path('reports/occupancy/', views.occupancy_report, name='occupancy_report'),
+
+    path('reports/revenue/', revenue_report, name='revenue_report'),
+
+
+
 ]
 
