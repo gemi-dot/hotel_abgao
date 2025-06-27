@@ -1,4 +1,11 @@
 from django.db import models
+######
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
+######
+
+
 
 # Create your models here.
 class Room(models.Model):
@@ -47,3 +54,14 @@ def save(self, *args, **kwargs):
     else:
         self.room.is_available = True
     self.room.save()
+
+
+
+class Client(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    license_key = models.CharField(max_length=64, unique=True)
+    trial_start = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+
+    def trial_expired(self):
+        return timezone.now() > self.trial_start + timedelta(days=7)

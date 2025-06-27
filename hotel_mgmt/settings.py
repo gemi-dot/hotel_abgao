@@ -42,15 +42,20 @@ INSTALLED_APPS = [
 
 ]
 
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',            # ✅ MUST be before AuthenticationMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',        # ✅ Comes after SessionMiddleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'hotel.middleware.TrialCheckMiddleware',                           # ✅ Custom middleware comes after auth
 ]
+
+
 
 ROOT_URLCONF = 'hotel_mgmt.urls'
 
@@ -59,7 +64,10 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         #'DIRS': [],
 
-        'DIRS': [BASE_DIR / 'hotel_mgmt' / 'hotel' / 'templates'],
+       # 'DIRS': [BASE_DIR / 'hotel_mgmt' / 'hotel' / 'templates'],
+
+        'DIRS': [BASE_DIR / 'hotel' / 'templates'],
+ 
         
         'APP_DIRS': True,
         'OPTIONS': {

@@ -1,16 +1,28 @@
 {% extends 'hotel/base.html' %}
+
 {% block content %}
-<h2>Available Rooms</h2>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    {% for room in rooms %}
-    <div class="p-4 border rounded shadow">
-        <h3 class="text-xl font-semibold">Room {{ room.number }}</h3>
-        <p>Type: {{ room.get_type_display }}</p>
-        <p>Price: Php{{ room.price }}</p>
-        <a href="{% url 'booking_create' %}?room_id={{ room.id }}" class="btn btn-primary mt-2">Book Now</a>
+<div class="container mt-4">
+    <h2 class="mb-4">🛏️ Available Rooms</h2>
+
+    {% if rooms %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for room in rooms %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Room {{ room.number }}</h5>
+                    <p class="card-text mb-1"><strong>Type:</strong> {{ room.get_type_display }}</p>
+                    <p class="card-text mb-2"><strong>Price:</strong> ₱{{ room.price }}</p>
+                    <a href="{% url 'booking_create' %}?room_id={{ room.id }}" class="btn btn-sm btn-primary">Book Now</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    {% empty %}
-    <p>No rooms available at the moment.</p>
-    {% endfor %}
+    {% else %}
+    <div class="alert alert-info">No rooms available at the moment.</div>
+    {% endif %}
+
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm mt-4">← Back to Dashboard</a>
 </div>
 {% endblock %}

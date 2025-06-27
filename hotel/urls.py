@@ -10,6 +10,10 @@ urlpatterns = [
     path('rooms/<int:pk>/edit/', views.room_edit, name='room_edit'),
     path('rooms/<int:pk>/delete/', views.room_delete, name='room_delete'),
 
+    path('rooms/vacant/', views.vacant_rooms, name='vacant_rooms'),
+
+
+
     path('bookings/', views.booking_list, name='booking_list'),
     path('bookings/create/', views.booking_create, name='booking_create'),
     path('bookings/<int:pk>/', views.booking_detail, name='booking_detail'),
@@ -25,6 +29,9 @@ urlpatterns = [
     path('reports/occupancy/', views.occupancy_report, name='occupancy_report'),
 
     path('reports/revenue/', revenue_report, name='revenue_report'),
+
+
+    path('trial-expired/', views.trial_expired, name='trial_expired'),
 
 
 

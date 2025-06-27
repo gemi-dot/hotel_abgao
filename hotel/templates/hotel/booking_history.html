@@ -1,25 +1,90 @@
 {% extends 'hotel/base.html' %}
+
 {% block content %}
-<h2>Booking History</h2>
-<form method="get" class="mb-4">
-    <input type="text" name="name" placeholder="Enter your name" value="{{ name }}" class="input">
-    <button type="submit" class="btn">Search</button>
-</form>
-{% if bookings %}
-<table class="table">
-    <tr>
-        <th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th>
-    </tr>
-    {% for booking in bookings %}
-    <tr>
-        <td>{{ booking.room.number }}</td>
-        <td>{{ booking.check_in }}</td>
-        <td>{{ booking.check_out }}</td>
-        <td>{{ booking.is_checked_in|yesno:"Checked in,Not checked in" }}</td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>No bookings found.</p>
-{% endif %}
+<div class="container mt-4">
+    <h2>📖 Booking History</h2>
+
+    <!-- Filter form (same as before) -->
+
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label class="form-label">From</label>
+            <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">To</label>
+            <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Room</label>
+            <select name="room_id" class="form-select form-select-sm">
+                <option value="">All Rooms</option>
+                {% for room in rooms %}
+                    <option value="{{ room.id }}" {% if selected_room == room.id %}selected{% endif %}>
+                        {{ room.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        </div>
+    </form>
+    
+
+    {% if page_obj.object_list %}
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Room</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Contact</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in page_obj %}
+                <tr>
+                    <td>{{ booking.customer_name }}</td>
+                    <td>{{ booking.room }}</td>
+                    <td>{{ booking.check_in|date:"M d, Y" }}</td>
+                    <td>{{ booking.check_out|date:"M d, Y" }}</td>
+                    <td>{{ booking.contact }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination Controls -->
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_room %}room_id={{ selected_room }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Previous</span></li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_room %}room_id={{ selected_room }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Next</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% else %}
+        <div class="alert alert-info mt-4">No bookings found.</div>
+    {% endif %}
+
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm mt-3">← Back to Dashboard</a>
+</div>
 {% endblock %}

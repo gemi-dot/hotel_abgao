@@ -19,6 +19,11 @@ from django.db.models import F
 from django.db.models import Sum, Avg
 from datetime import datetime
 
+from django.shortcuts import render
+from .models import Booking, Room
+
+
+
 
 
 
@@ -55,6 +60,14 @@ def dashboard(request):
         "available_rooms": available_rooms,
         "total_bookings": total_bookings,
         "checked_in": checked_in,
+
+    })
+
+# 👇 Add this below or above `dashboard`
+def trial_expired(request):
+    return render(request, 'hotel/trial_expired.html', {
+        'contact_email': 'gemirong@gmail.com',
+        'phone': '09392641109'
     })
 
 
@@ -94,7 +107,37 @@ def available_rooms(request):
     rooms = Room.objects.filter(is_available=True)
     return render(request, 'hotel/available_rooms.html', {'rooms': rooms})
 #
+################
+def vacant_rooms(request):
+    from django.utils import timezone
+    from django.db.models import Q
 
+    today = timezone.now().date()
+
+    start_date = request.GET.get('start_date', today)
+    end_date = request.GET.get('end_date', today)
+
+    booked = Booking.objects.filter(
+        Q(check_in__lte=end_date) & Q(check_out__gte=start_date)
+    ).values_list('room_id', flat=True)
+
+    available_rooms = Room.objects.exclude(id__in=booked)
+
+    context = {
+        'rooms': available_rooms,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    return render(request, 'hotel/vacant_rooms.html', context)
+
+
+
+
+
+
+
+
+###############
 
 # BOOKING VIEWS
 @login_required
@@ -110,7 +153,12 @@ def booking_list(request):
     if end_date:
         bookings = bookings.filter(check_out__lte=end_date)
     if status == 'checked_in':
-        bookings = bookings.filter(is_checked_in=True)
+
+        #bookings = bookings.filter(is_checked_in=True)
+
+        bookings = Booking.objects.select_related('room').order_by('-check_in')
+
+
     elif status == 'not_checked_in':
         bookings = bookings.filter(is_checked_in=False)
 
@@ -155,9 +203,35 @@ def booking_delete(request, pk):
 
 
 def booking_history(request):
-    name = request.GET.get('name')
-    bookings = Booking.objects.filter(customer_name__icontains=name) if name else []
-    return render(request, 'hotel/booking_history.html', {'bookings': bookings, 'name': name})
+    bookings = Booking.objects.select_related('room').all()
+    rooms = Room.objects.all()
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    room_id = request.GET.get('room_id')
+
+    if start_date:
+        bookings = bookings.filter(check_in__gte=start_date)
+    if end_date:
+        bookings = bookings.filter(check_out__lte=end_date)
+    if room_id:
+        bookings = bookings.filter(room_id=room_id)
+
+    # Pagination
+    paginator = Paginator(bookings.order_by('-check_in'), 10)  # 10 bookings per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'rooms': rooms,
+        'start_date': start_date,
+        'end_date': end_date,
+        'selected_room': int(room_id) if room_id else None,
+    }
+    return render(request, 'hotel/booking_history.html', context)
+
+
 
 
 
@@ -323,3 +397,5 @@ def revenue_report(request):
     }
 
     return render(request, 'hotel/revenue_report.html', context)
+
+

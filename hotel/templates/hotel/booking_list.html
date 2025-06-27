@@ -1,77 +1,51 @@
+
 {% extends 'hotel/base.html' %}
-{% load static %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">All Bookings</h1>
+    <h2>📋 Booking List</h2>
 
-    <!-- Filter Form -->
-    <form method="get" class="row g-3 mb-4">
-        <div class="col-md-3">
-            <label class="form-label">Check-in From</label>
-            <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Check-out To</label>
-            <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Status</label>
-            <select name="status" class="form-select">
-                <option value="">All</option>
-                <option value="checked_in" {% if status == 'checked_in' %}selected{% endif %}>Checked In</option>
-                <option value="not_checked_in" {% if status == 'not_checked_in' %}selected{% endif %}>Not Checked In</option>
-            </select>
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
-        </div>
-    </form>
-
-    <!-- Bookings Table -->
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
+    {% if bookings %}
+    <div class="table-responsive mt-3">
+        <table class="table table-hover table-bordered align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Room</th>
+                    <th>#</th>
                     <th>Customer</th>
+                    <th>Room</th>
                     <th>Check-in</th>
                     <th>Check-out</th>
-                    <th>Status</th>
+                    <th>Contact</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for booking in bookings %}
-                    <tr>
-                        <td>
-                            <strong>{{ booking.room }}</strong><br>
-                            <span class="badge bg-secondary">{{ booking.room.room_type }}</span>
-                        </td>
-                        <td>{{ booking.customer_name }}</td>
-                        <td>{{ booking.check_in|date:"M d, Y" }}</td>
-                        <td>{{ booking.check_out|date:"M d, Y" }}</td>
-                        <td>
-                            {% if booking.is_checked_in %}
-                                <span class="text-success">✅</span>
-                            {% else %}
-                                <span class="text-danger">❌</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'booking_edit' booking.pk %}" class="btn btn-sm btn-outline-primary">✏️</a>
-                            <a href="{% url 'booking_detail' booking.pk %}" class="btn btn-sm btn-outline-info">🔍</a>
-                            <a href="{% url 'toggle_checkin' booking.pk %}" class="btn btn-sm btn-outline-warning">🔄</a>
-                            <a href="{% url 'booking_delete' booking.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">🗑️</a>
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center">No bookings found.</td>
-                    </tr>
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ booking.customer_name }}</td>
+                    <td>{{ booking.room }}</td>
+                    <td>{{ booking.check_in }}</td>
+                    <td>{{ booking.check_out }}</td>
+                    <td>{{ booking.contact }}</td>
+                    <td>
+                        <a href="{% url 'booking_detail' booking.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    {% else %}
+        <div class="alert alert-warning mt-4 text-center">
+            No bookings found.
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+            ← Back to Dashboard
+        </a>
     </div>
 </div>
 {% endblock %}
