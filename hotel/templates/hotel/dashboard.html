@@ -1,5 +1,7 @@
 {% extends 'hotel/base.html' %}
 {% load static %}
+{% load humanize %}
+{% load peso_filters %}
 
 {% block content %}
 <div class="container mt-4">
@@ -9,135 +11,118 @@
     <div class="row text-center mb-4">
         {% for card in stats %}
         <div class="col-md-3 mb-3">
-            <div class="card text-white bg-{{ card.bg }} shadow-sm">
+            <div class="card text-white bg-{{ card.bg|default:'primary' }} shadow-sm">
                 <div class="card-body">
                     <strong>{{ card.title }}</strong>
-                    <h4 class="mt-2">{{ card.count }}</h4>
+                    <h4 class="mt-2">
+                        {% if card.title|lower == 'revenue' %}
+                            ₱{{ card.count|floatformat:2|intcomma }}
+                        {% else %}
+                            {{ card.count }}
+                        {% endif %}
+                    </h4>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
+    <!-- Total Revenue -->
+    <div class="mb-4">
+        <h4>Total Revenue: {{ total_revenue|peso }}</h4>
+    </div>
+
     <!-- Quick Actions -->
     <h4 class="mb-3">🚀 Quick Actions</h4>
     <div class="row g-2 mb-4">
-        <div class="col-md-3">
-            <a href="{% url 'room_list' %}" class="btn btn-outline-primary w-100">🛏 Manage Rooms</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'booking_list' %}" class="btn btn-outline-secondary w-100">📋 View Bookings</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'booking_create' %}" class="btn btn-outline-success w-100">➕ New Booking</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'vacant_rooms' %}" class="btn btn-outline-info w-100">✅ Vacant Rooms</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'booking_history' %}" class="btn btn-outline-warning w-100">📜 Booking History</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'booking_summary' %}" class="btn btn-outline-dark w-100">📊 Summary Report</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'occupancy_report' %}" class="btn btn-outline-dark w-100">📈 Occupancy Report</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'revenue_report' %}" class="btn btn-outline-dark w-100">💰 Revenue Report</a>
-        </div>
+        <div class="col-md-3"><a href="{% url 'room_list' %}" class="btn btn-outline-primary w-100">🛏 Manage Rooms</a></div>
+        <div class="col-md-3"><a href="{% url 'booking_list' %}" class="btn btn-outline-secondary w-100">📋 View Bookings</a></div>
+        <div class="col-md-3"><a href="{% url 'booking_create' %}" class="btn btn-outline-success w-100">➕ New Booking</a></div>
+        <div class="col-md-3"><a href="{% url 'vacant_rooms' %}" class="btn btn-outline-info w-100">✅ Vacant Rooms</a></div>
+        <div class="col-md-3"><a href="{% url 'booking_history' %}" class="btn btn-outline-warning w-100">📜 Booking History</a></div>
+        <div class="col-md-3"><a href="{% url 'booking_summary' %}" class="btn btn-outline-dark w-100">📊 Summary Report</a></div>
+        <div class="col-md-3"><a href="{% url 'occupancy_report' %}" class="btn btn-outline-dark w-100">📈 Occupancy Report</a></div>
+        <div class="col-md-3"><a href="{% url 'revenue_report' %}" class="btn btn-outline-dark w-100">💰 Revenue Report</a></div>
     </div>
 
     <!-- Filters -->
     <h4 class="mb-3">📅 Recent Bookings</h4>
     <form method="get" class="row g-2 mb-3">
         <div class="col-md-3">
-            <label class="form-label">From</label>
-            <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request.GET.start_date }}">
+            <label for="start-date" class="form-label">From</label>
+            <input type="date" name="start_date" id="start-date" class="form-control form-control-sm" value="{{ request.GET.start_date }}">
         </div>
         <div class="col-md-3">
-            <label class="form-label">To</label>
-            <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request.GET.end_date }}">
+            <label for="end-date" class="form-label">To</label>
+            <input type="date" name="end_date" id="end-date" class="form-control form-control-sm" value="{{ request.GET.end_date }}">
         </div>
         <div class="col-md-3">
-            <label class="form-label">Room</label>
-            <select name="room" class="form-select form-select-sm">
+            <label for="room" class="form-label">Room</label>
+            <select name="room" id="room" class="form-select form-select-sm">
                 <option value="">All Rooms</option>
                 {% for room in rooms %}
-                    <option value="{{ room.id }}" {% if request.GET.room == room.id|stringformat:"s" %}selected{% endif %}>{{ room.name }}</option>
+                    <option value="{{ room.id }}" {% if request.GET.room == room.id|stringformat:"s" %}selected{% endif %}>{{ room.number }} - {{ room.type|capfirst }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-3">
-            <label class="form-label">Customer</label>
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search name..." value="{{ request.GET.search }}">
+            <label for="customer" class="form-label">Customer</label>
+            <input type="text" name="customer" id="customer" class="form-control form-control-sm" value="{{ request.GET.customer }}">
         </div>
-        <div class="col-12 text-end mt-2">
-            <button type="submit" class="btn btn-sm btn-primary">🔍 Apply Filters</button>
-            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-sm btn-primary mt-4 w-100">🔍 Filter</button>
         </div>
     </form>
 
-    <!-- Booking Table -->
-    <div class="table-responsive mb-4">
+    <!-- Total Amount from Recent Bookings -->
+    <div class="mb-3">
+        <h5>Total Amount (Recent Bookings): {{ total_amount_recent|peso }}</h5>
+    </div>
+
+    <!-- Booking List -->
+    <div class="table-responsive">
         <table class="table table-striped table-bordered align-middle">
-            <thead class="table-light">
+            <thead class="table-dark">
                 <tr>
-                    <th>Room</th>
-                    <th>Customer</th>
-                    <th>Check-in</th>
-                    <th>Check-out</th>
-                    <th>Status</th>
+                    <th scope="col">Check-In</th>
+                    <th scope="col">Check-Out</th>
+                    <th scope="col">Room</th>
+                    <th scope="col">Customer</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 {% for booking in recent_bookings %}
                 <tr>
-                    <td>
-                        <strong>{{ booking.room }}</strong><br>
-                        <span class="badge bg-secondary">{{ booking.room.room_type }}</span>
-                    </td>
-                    <td>{{ booking.customer_name }}</td>
                     <td>{{ booking.check_in|date:"M d, Y" }}</td>
                     <td>{{ booking.check_out|date:"M d, Y" }}</td>
+                    <td>{{ booking.room.number }} - {{ booking.room.type|capfirst }}</td>
+                    <td>{{ booking.customer_name }}</td>
                     <td>
-                        {% if booking.is_checked_in %}
-                            <span class="text-success">✅ Checked-in</span>
+                        {% if booking.payment_status == 'paid' %}
+                            <span class="badge bg-success">Paid</span>
+                        {% elif booking.payment_status == 'pending' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% elif booking.payment_status == 'partial' %}
+                            <span class="badge bg-info text-dark">Partial</span>
+                        {% elif booking.payment_status == 'failed' %}
+                            <span class="badge bg-danger">Failed</span>
+                        {% elif booking.payment_status == 'refunded' %}
+                            <span class="badge bg-secondary">Refunded</span>
                         {% else %}
-                            <span class="text-danger">❌ Not yet</span>
+                            <span class="badge bg-light text-dark">Unknown</span>
                         {% endif %}
                     </td>
+                    <td>{{ booking.amount|peso }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted">No recent bookings.</td>
+                    <td colspan="6" class="text-center">No bookings found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
-    <!-- Pagination -->
-    {% if recent_bookings.has_other_pages %}
-    <nav class="d-flex justify-content-center">
-        <ul class="pagination pagination-sm">
-            {% if recent_bookings.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ recent_bookings.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">←</a>
-            </li>
-            {% endif %}
-            {% for num in recent_bookings.paginator.page_range %}
-            <li class="page-item {% if recent_bookings.number == num %}active{% endif %}">
-                <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode|cut:'page=' }}">{{ num }}</a>
-            </li>
-            {% endfor %}
-            {% if recent_bookings.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ recent_bookings.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">→</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
 </div>
 {% endblock %}

@@ -21,20 +21,52 @@ class Room(models.Model):
 
     def __str__(self):
         return f'Room {self.number} - {self.type}'
+    
+
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.room.is_available = not self.is_checked_in
+        self.room.save()
+
+
 
 
 class Booking(models.Model):
     customer_name = models.CharField(max_length=100)
-
-    #contact = models.CharField(max_length=50)  # Add this if not present
     contact = models.CharField(max_length=100, default='N/A', blank=True)
-
-
-
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    room = models.ForeignKey('Room', on_delete=models.CASCADE)  # Ensure Room model exists
     check_in = models.DateField()
     check_out = models.DateField()
     is_checked_in = models.BooleanField(default=False)
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    payment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('paid', 'Paid'),
+            ('partial', 'Partially Paid'),
+            ('failed', 'Failed'),
+            ('refunded', 'Refunded'),
+        ],
+        default='pending'
+    )
+    payment_date = models.DateTimeField(null=True, blank=True)
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.customer_name} - {self.room} ({self.payment_status})"
+    
+
+    def save(self, *args, **kwargs):
+        if self.room and self.check_in and self.check_out:
+            nights = (self.check_out - self.check_in).days
+            if nights < 1:
+                nights = 1
+            self.amount = self.room.price * nights
+        super().save(*args, **kwargs)
+
 
     @property
     def total_price(self):
@@ -65,3 +97,25 @@ class Client(models.Model):
 
     def trial_expired(self):
         return timezone.now() > self.trial_start + timedelta(days=7)
+
+
+#################
+class Payment(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('card', 'Card'),
+        ('online', 'Online'),
+    ]
+
+    booking = models.OneToOneField(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='payment'
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    is_paid = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Payment for Booking #{self.booking.id} - {'Paid' if self.is_paid else 'Pending'}"

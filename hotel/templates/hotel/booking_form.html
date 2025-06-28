@@ -1,16 +1,24 @@
-{% extends 'hotel/base.html' %}
+{% extends "hotel/base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="text-center mb-4">Booking Form</h1>
-    <form method="post" class="shadow p-4 rounded bg-light">
+<div class="container mt-4">
+    <h2>Create Booking & Payment</h2>
+
+   
+    <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="text-center mt-3">
-            <button type="submit" class="btn btn-primary">Save</button>
-            <a href="{% url 'booking_list' %}" class="btn btn-secondary">All Bookings</a>
-            <a href="{% url 'dashboard' %}" class="btn btn-info">Back to Dashboard</a>
-        </div>
+    
+        <h4>Booking Info</h4>
+        {{ booking_form.as_p }}
+    
+        <h4>Optional Payment Info (for upfront payments)</h4>
+        {{ payment_form.as_p }}
+    
+        <button type="submit" class="btn btn-primary">Save Booking</button>
+        <a href="{% url 'booking_list' %}" class="btn btn-secondary">Cancel</a>
     </form>
+    
+
+
 </div>
 {% endblock %}

@@ -1,51 +1,76 @@
-
 {% extends 'hotel/base.html' %}
+{% load peso_filters %}
 
 {% block content %}
 <div class="container mt-4">
     <h2>📋 Booking List</h2>
 
-    {% if bookings %}
-    <div class="table-responsive mt-3">
-        <table class="table table-hover table-bordered align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>#</th>
-                    <th>Customer</th>
-                    <th>Room</th>
-                    <th>Check-in</th>
-                    <th>Check-out</th>
-                    <th>Contact</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for booking in bookings %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ booking.customer_name }}</td>
-                    <td>{{ booking.room }}</td>
-                    <td>{{ booking.check_in }}</td>
-                    <td>{{ booking.check_out }}</td>
-                    <td>{{ booking.contact }}</td>
-                    <td>
-                        <a href="{% url 'booking_detail' booking.pk %}" class="btn btn-sm btn-outline-primary">View</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-        <div class="alert alert-warning mt-4 text-center">
-            No bookings found.
-        </div>
-    {% endif %}
+    <table class="table table-striped mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>Customer</th>
+                <th>Contact</th>
+                <th>Room</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Checked In</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td>{{ booking.customer_name }}</td>
+                <td>{{ booking.contact }}</td>
+                <td>{{ booking.room.number }} - {{ booking.room.get_type_display }}</td>
+                <td>{{ booking.check_in|date:"M d, Y" }}</td>
+                <td>{{ booking.check_out|date:"M d, Y" }}</td>
 
-    <div class="mt-4">
-        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-            ← Back to Dashboard
-        </a>
-    </div>
+                <!-- Display Booking Total Amount -->
+                <td>{{ booking.amount|peso }}</td>
+
+                <!-- Display Payment Info -->
+                <td>
+                    {% if booking.payment %}
+                        {{ booking.payment.amount|peso }}<br>
+                        <small>
+                            {{ booking.payment.get_payment_method_display }} -
+                            {% if booking.payment.is_paid %}
+                                <span class="badge bg-success">Paid</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Unpaid</span>
+                            {% endif %}
+                        </small>
+                    {% else %}
+                        <span class="text-muted">No payment</span>
+                    {% endif %}
+                </td>
+
+                <!-- Checked In Status -->
+                <td>
+                    {% if booking.is_checked_in %}
+                        ✅
+                    {% else %}
+                        ❌
+                    {% endif %}
+                </td>
+
+                <!-- Actions -->
+                <td>
+                    <a href="{% url 'toggle_check_in' booking.id %}" class="btn btn-sm btn-primary mb-1">Check-In</a>
+                    {% if not booking.payment or not booking.payment.is_paid %}
+                        <a href="{% url 'create_payment' booking.id %}" class="btn btn-sm btn-success">Pay</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center text-muted">No bookings available.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}
