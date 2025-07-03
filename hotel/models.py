@@ -55,8 +55,12 @@ class Booking(models.Model):
     payment_date = models.DateTimeField(null=True, blank=True)
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
 
+   # def __str__(self):
+#    return f"{self.customer_name} - {self.room} ({self.payment_status})"
+    
     def __str__(self):
-        return f"{self.customer_name} - {self.room} ({self.payment_status})"
+        return f'{self.customer_name} - Room {self.room.number}'
+
     
 
     def save(self, *args, **kwargs):
@@ -88,9 +92,10 @@ def save(self, *args, **kwargs):
     self.room.save()
 
 
-
+###########
 class Client(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+##############    
     license_key = models.CharField(max_length=64, unique=True)
     trial_start = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)

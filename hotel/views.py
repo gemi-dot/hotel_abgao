@@ -19,7 +19,7 @@ from datetime import datetime
 # =======================
 # 🔹 DASHBOARD
 # =======================
-@login_required
+
 
 @login_required
 def dashboard(request):
@@ -63,11 +63,16 @@ def dashboard(request):
 
     rooms = Room.objects.all()
 
+    
+
     return render(request, 'hotel/dashboard.html', {
         "stats": stats,
         "recent_bookings": recent_bookings,
         "rooms": rooms,
         "total_revenue": total_revenue,
+        "today": timezone.now().date(),  # <-- add here
+
+     
     })
 
 
@@ -397,7 +402,6 @@ def create_or_update_payment(request, booking_id):
         form = PaymentForm(instance=payment)
 
     return render(request, 'hotel/payment_form.html', {'form': form, 'booking': booking})
-
 
 
 
