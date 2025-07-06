@@ -37,7 +37,9 @@
     <div class="row g-2 mb-4">
         <div class="col-md-3"><a href="{% url 'room_list' %}" class="btn btn-outline-primary w-100">🛏 Manage Rooms</a></div>
         <div class="col-md-3"><a href="{% url 'booking_list' %}" class="btn btn-outline-secondary w-100">📋 View Bookings</a></div>
-        <div class="col-md-3"><a href="{% url 'booking_create' %}" class="btn btn-outline-success w-100">➕ New Booking</a></div>
+       
+        <div class="col-md-3"><a href="{% url 'create_booking' %}" class="btn btn-outline-success w-100">➕ New Booking</a></div>
+
         <div class="col-md-3"><a href="{% url 'vacant_rooms' %}" class="btn btn-outline-info w-100">✅ Vacant Rooms</a></div>
         <div class="col-md-3"><a href="{% url 'booking_history' %}" class="btn btn-outline-warning w-100">📜 Booking History</a></div>
         <div class="col-md-3"><a href="{% url 'booking_summary' %}" class="btn btn-outline-dark w-100">📊 Summary Report</a></div>

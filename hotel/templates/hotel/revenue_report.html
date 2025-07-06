@@ -1,35 +1,53 @@
+
 {% extends 'hotel/base.html' %}
 
 {% block content %}
 <div class="container mt-4">
     <h2>💰 Revenue Report</h2>
 
-    <form method="get" class="row g-2 mt-3 mb-4">
-        <div class="col-md-4">
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-3">
             <label class="form-label">From</label>
-            <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm">
+            <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">To</label>
-            <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm">
+            <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary btn-sm">Generate Report</button>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary">Filter</button>
         </div>
     </form>
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Results</h5>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item">Total Bookings: <strong>{{ total_bookings }}</strong></li>
-                <li class="list-group-item">Total Revenue: <strong>P{{ total_revenue|floatformat:2 }}</strong></li>
-                <li class="list-group-item">Average Revenue per Booking: <strong>P{{ avg_revenue|floatformat:2 }}</strong></li>
-                <li class="list-group-item">Date Range: <strong>{{ start_date }} to {{ end_date }}</strong></li>
-            </ul>
-        </div>
-    </div>
+    <h4>Total Revenue: ₱{{ total_revenue|floatformat:2 }}</h4>
+    <h4>Total Bookings: {{ total_bookings }}</h4>
+    <h4>Average Revenue per Booking: ₱{{ avg_revenue|floatformat:2 }}</h4>
 
-    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">← Back to Dashboard</a>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Transaction ID</th>
+                <th>Booking</th>
+                <th>Amount</th>
+                <th>Payment Method</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td>{{ payment.transaction_id }}</td>
+                <td>{{ payment.booking.guest.name }} - Room {{ payment.booking.room.number }}</td>
+                <td>₱{{ payment.amount|floatformat:2 }}</td>
+                <td>{{ payment.payment_method }}</td>
+                <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No payments found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

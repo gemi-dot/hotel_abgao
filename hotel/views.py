@@ -295,6 +295,26 @@ def booking_summary(request):
         'room_id': room_id,
     })
 
+
+from .forms import BookingForm
+
+
+def create_booking(request):
+    if request.method == 'POST':
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.total_price = booking.compute_total_price()  # Compute total price
+            booking.save()
+            return redirect('booking_detail', pk=booking.pk)  # Redirect to booking detail page
+    else:
+        form = BookingForm()
+    return render(request, 'hotel/booking_form.html', {'form': form})
+
+
+
+
+
 # =======================
 # 🔹 REPORTS
 # =======================
@@ -336,20 +356,21 @@ def occupancy_report(request):
     })
 
 @login_required
+
 def revenue_report(request):
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
 
     start_date = end_date = None
-    payments = Payment.objects.filter(is_paid=True).select_related('booking')
+    payments = Payment.objects.filter(booking__payment_status='paid').select_related('booking')
 
     # Filter by date range on payment date
     try:
         if start_date_str:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             payments = payments.filter(payment_date__date__gte=start_date)
         if end_date_str:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
             payments = payments.filter(payment_date__date__lte=end_date)
     except ValueError:
         pass  # Invalid date strings are ignored
@@ -365,7 +386,6 @@ def revenue_report(request):
         'total_revenue': total_revenue,
         'avg_revenue': avg_revenue,
     })
-
 
 # =======================
 # 🔹 PAYMENTS
