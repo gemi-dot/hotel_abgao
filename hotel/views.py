@@ -18,6 +18,8 @@ from .forms import RoomForm, BookingForm, PaymentForm
 from django.db.models import Prefetch
 import uuid
 
+from .models import Booking
+
 
 
 
@@ -427,7 +429,11 @@ def create_payment(request, booking_id):
     return render(request, 'hotel/create_payment.html', {'form': form, 'booking': booking})
 
 
-
+def toggle_check_in(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    booking.is_checked_in = not booking.is_checked_in  # Toggle the check-in status
+    booking.save()
+    return redirect('booking_list')  # Redirect back to the booking list
 
 
 

@@ -1,7 +1,6 @@
 {% extends 'hotel/base.html' %}
 {% load peso_filters %}
 
-
 {% block content %}
 <div class="container mt-4">
     <h2>📋 Booking List</h2>
@@ -16,6 +15,7 @@
                 <th>Check-Out</th>
                 <th>Amount</th>
                 <th>Payment Status</th>
+                <th>Checked-In</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -26,7 +26,7 @@
                 <td>{{ booking.guest.name }}</td>
 
                 <!-- Display Customer Contact -->
-                <td>{{ booking.guest.phone }}</td>
+                <td>{{ booking.guest.phone|default:"Not provided" }}</td>
 
                 <!-- Display Room Information -->
                 <td>{{ booking.room.number }} - {{ booking.room.get_room_type_display }}</td>
@@ -37,7 +37,6 @@
 
                 <!-- Display Booking Total Amount -->
                 <td>₱{{ booking.total_price|floatformat:2 }}</td>
-              
 
                 <!-- Display Payment Status -->
                 <td>
@@ -50,17 +49,33 @@
                     {% endif %}
                 </td>
 
+                <!-- Display Checked-In Status -->
+                <td>
+                    {% if booking.is_checked_in %}
+                        <span class="badge bg-success">Yes</span>
+                    {% else %}
+                        <span class="badge bg-secondary">No</span>
+                    {% endif %}
+                </td>
+
                 <!-- Actions -->
                 <td>
                     <a href="{% url 'create_payment' booking.id %}" class="btn btn-sm btn-success mb-1">Manage Payment</a>
                     <a href="{% url 'booking_edit' booking.id %}" class="btn btn-sm btn-warning mb-1">Edit</a>
                     <a href="{% url 'booking_delete' booking.id %}" class="btn btn-sm btn-danger mb-1"
                        onclick="return confirm('Are you sure you want to delete this booking?');">Delete</a>
+                    <a href="{% url 'toggle_check_in' booking.id %}" class="btn btn-sm btn-info mb-1">
+                        {% if booking.is_checked_in %}
+                            Undo Check-In
+                        {% else %}
+                            Check-In
+                        {% endif %}
+                    </a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="text-center text-muted">No bookings available.</td>
+                <td colspan="9" class="text-center text-muted">No bookings available.</td>
             </tr>
             {% endfor %}
         </tbody>

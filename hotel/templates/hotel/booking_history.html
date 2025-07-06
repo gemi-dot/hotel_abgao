@@ -2,10 +2,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>📖 Booking History</h2>
-
-    <!-- Filter form (same as before) -->
-
+    <h2>📜 Booking History</h2>
 
     <form method="get" class="row g-3 mb-4">
         <div class="col-md-3">
@@ -22,7 +19,7 @@
                 <option value="">All Rooms</option>
                 {% for room in rooms %}
                     <option value="{{ room.id }}" {% if selected_room == room.id %}selected{% endif %}>
-                        {{ room.name }}
+                        {{ room.number }} - {{ room.get_room_type_display }}
                     </option>
                 {% endfor %}
             </select>
@@ -31,28 +28,39 @@
             <button type="submit" class="btn btn-primary btn-sm">Filter</button>
         </div>
     </form>
-    
 
     {% if page_obj.object_list %}
     <table class="table table-striped mt-3">
         <thead>
             <tr>
                 <th>Customer</th>
-                <th>Room</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
                 <th>Contact</th>
+                <th>Room</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Total Price</th>
+                <th>Payment Status</th>
             </tr>
         </thead>
         <tbody>
             {% for booking in page_obj %}
-                <tr>
-                    <td>{{ booking.customer_name }}</td>
-                    <td>{{ booking.room }}</td>
-                    <td>{{ booking.check_in|date:"M d, Y" }}</td>
-                    <td>{{ booking.check_out|date:"M d, Y" }}</td>
-                    <td>{{ booking.contact }}</td>
-                </tr>
+            <tr>
+                <td>{{ booking.guest.name }}</td>
+                <td>{{ booking.guest.phone|default:"Not provided" }}</td>
+                <td>{{ booking.room.number }} - {{ booking.room.get_room_type_display }}</td>
+                <td>{{ booking.check_in|date:"M d, Y" }}</td>
+                <td>{{ booking.check_out|date:"M d, Y" }}</td>
+                <td>₱{{ booking.total_price|floatformat:2 }}</td>
+                <td>
+                    {% if booking.payment_status == 'paid' %}
+                        <span class="badge bg-success">Paid</span>
+                    {% elif booking.payment_status == 'partial' %}
+                        <span class="badge bg-warning text-dark">Partial</span>
+                    {% else %}
+                        <span class="badge bg-danger">Pending</span>
+                    {% endif %}
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
