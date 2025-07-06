@@ -1,5 +1,5 @@
-
 {% extends "hotel/base.html" %}
+{% load peso_filters %}
 
 {% block content %}
 <div class="container mt-4">
@@ -9,32 +9,70 @@
         <div class="card-body">
             <h5 class="card-title">{{ booking.customer_name }}</h5>
 
-            <p class="card-text"><strong>Contact:</strong> {{ booking.contact }}</p>
+            <p class="card-text"><strong>Contact Name:</strong> {{ booking.guest.name }}</p>
+            <p class="card-text"><strong>Contact Number:</strong> {{ booking.guest.phone|default:"Not provided" }}</p>
             <p class="card-text"><strong>Room:</strong> {{ booking.room.number }} - {{ booking.room.get_type_display }}</p>
-            <p class="card-text"><strong>Check-in:</strong> {{ booking.check_in }}</p>
-            <p class="card-text"><strong>Check-out:</strong> {{ booking.check_out }}</p>
+            <p class="card-text"><strong>Room Type:</strong> {{ booking.room.get_room_type_display }}</p>
+            <p class="card-text"><strong>Check-in:</strong> {{ booking.check_in|date:"M d, Y" }}</p>
+            <p class="card-text"><strong>Check-out:</strong> {{ booking.check_out|date:"M d, Y" }}</p>
+            <p class="card-text"><strong>Total Price:</strong> ₱{{ booking.total_price|floatformat:2 }}</p>
 
             <p class="card-text">
                 <strong>Status:</strong>
                 {% if booking.is_checked_in %}
-                    ✅ Checked In
+                    <span class="badge bg-success">✅ Checked In</span>
                 {% else %}
-                    ⏳ Not Checked In
+                    <span class="badge bg-warning">⏳ Not Checked In</span>
                 {% endif %}
             </p>
 
             <p class="card-text">
-                <strong>Payment:</strong><br>
-                {% if booking.payment %}
-                    {% if booking.payment.is_paid %}
-                        <span class="badge bg-success">💰 Paid</span>
-                    {% else %}
-                        <a href="{% url 'create_payment' booking.id %}" class="btn btn-warning">Complete Payment</a>
-                    {% endif %}
+                <strong>Payment Status:</strong>
+                {% if booking.payment_status == 'paid' %}
+                    <span class="badge bg-success">Paid</span>
+                {% elif booking.payment_status == 'partial' %}
+                    <span class="badge bg-warning text-dark">Partial</span>
                 {% else %}
-                    <a href="{% url 'create_payment' booking.id %}" class="btn btn-success">Make Payment</a>
+                    <span class="badge bg-danger">Pending</span>
                 {% endif %}
             </p>
+            <p class="card-text text-muted">
+                <small>
+                    <strong>Payment Status:</strong> 
+                    <span class="badge bg-success">Paid</span> - Fully paid. 
+                    <span class="badge bg-warning text-dark">Partial</span> - Partially paid. 
+                    <span class="badge bg-danger">Pending</span> - No payment made yet.
+                </small>
+            </p>
+
+            <p class="card-text">
+                <strong>Payments:</strong>
+            </p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Amount</th>
+                        <th>Payment Method</th>
+                        <th>Transaction ID</th>
+                        <th>Payment Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in booking.payments.all %}
+                    <tr>
+                        <td>₱{{ payment.amount|floatformat:2 }}</td>
+                        <td>{{ payment.payment_method }}</td>
+                        <td>{{ payment.transaction_id }}</td>
+                        <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No payments have been made for this booking.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <a href="{% url 'create_payment' booking.id %}" class="btn btn-success mt-3">Add Payment</a>
 
             <div class="mt-4">
                 <a href="{% url 'booking_edit' booking.pk %}" class="btn btn-primary">Edit</a>

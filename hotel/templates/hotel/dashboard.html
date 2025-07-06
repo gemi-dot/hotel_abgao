@@ -97,8 +97,9 @@
                 <tr>
                     <td>{{ booking.check_in|date:"M d, Y" }}</td>
                     <td>{{ booking.check_out|date:"M d, Y" }}</td>
-                    <td>{{ booking.room.number }} - {{ booking.room.type|capfirst }}</td>
-                    <td>{{ booking.customer_name }}</td>
+                   
+                    <td>{{ booking.room.number }} - {{ booking.room.room_type }} ({{ booking.room.get_room_type_display }})</td>
+                    <td>{{ booking.guest.name }}</td>
                     <td>
                         {% if booking.is_checked_in %}
                             <span class="badge bg-success">Checked In</span>
@@ -110,8 +111,7 @@
                             <span class="badge bg-info text-dark">Booked</span>
                         {% endif %}
                     </td>
-                    
-                    <td>{{ booking.amount|peso }}</td>
+                    <td>{{ booking.total_price|peso }}</td>
                 </tr>
                 {% empty %}
                 <tr>

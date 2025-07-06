@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+import uuid
+
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
@@ -12,23 +14,40 @@ from django.views.decorators.http import require_POST
 from .models import Room, Booking, Payment
 from .forms import RoomForm, BookingForm, PaymentForm
 
-from datetime import datetime
+
+from django.db.models import Prefetch
+import uuid
+
+
 
 
 
 # =======================
 # 🔹 DASHBOARD
 # =======================
-
-
 @login_required
 def dashboard(request):
-    # Stats
-    total_bookings = Booking.objects.count()
+    # ✅ Use related_name 'payments'
+    bookings = Booking.objects.prefetch_related('payments').all()
+
+    total_bookings = bookings.count()
     total_rooms = Room.objects.count()
-    total_revenue = Booking.objects.filter(payment_status='paid').aggregate(total=Sum('amount'))['total'] or 0
-    paid_bookings = Booking.objects.filter(payment_status='paid').count()
-    pending_bookings = Booking.objects.filter(payment_status='pending').count()
+
+    # Compute revenue and payment statuses
+    total_revenue = 0
+    paid_bookings = 0
+    partial_bookings = 0
+    pending_bookings = 0
+
+    for booking in bookings:
+        total_paid = sum(p.amount for p in booking.payments.all())  # ✅ Correct usage
+        if total_paid >= booking.total_price:
+            paid_bookings += 1
+        elif total_paid > 0:
+            partial_bookings += 1
+        else:
+            pending_bookings += 1
+        total_revenue += total_paid  # ✅ Move inside the loop
 
     stats = [
         {"title": "Total Bookings", "count": total_bookings, "bg": "primary"},
@@ -44,7 +63,7 @@ def dashboard(request):
     room_id = request.GET.get('room')
     customer = request.GET.get('customer')
 
-    recent_bookings = Booking.objects.all().order_by('-check_in')
+    recent_bookings = Booking.objects.select_related('room', 'guest').order_by('-check_in')
 
     if start_date:
         recent_bookings = recent_bookings.filter(check_in__gte=start_date)
@@ -52,30 +71,19 @@ def dashboard(request):
         recent_bookings = recent_bookings.filter(check_out__lte=end_date)
     if room_id:
         recent_bookings = recent_bookings.filter(room_id=room_id)
-    #if customer:
-    #    recent_bookings = recent_bookings.filter(customer__icontains=customer)
-
     if customer:
-        recent_bookings = recent_bookings.filter(customer_name__icontains=customer)
-    
+        recent_bookings = recent_bookings.filter(guest__name__icontains=customer)  # ✅ Correct guest filter
 
-    recent_bookings = recent_bookings[:10]  # limit to latest 10
-
+    recent_bookings = recent_bookings[:10]
     rooms = Room.objects.all()
-
-    
 
     return render(request, 'hotel/dashboard.html', {
         "stats": stats,
         "recent_bookings": recent_bookings,
         "rooms": rooms,
         "total_revenue": total_revenue,
-        "today": timezone.now().date(),  # <-- add here
-
-     
+        "today": timezone.now().date(),
     })
-
-
 
 
 
@@ -135,27 +143,18 @@ def vacant_rooms(request):
 # =======================
 # 🔹 BOOKINGS
 # =======================
+
+
 @login_required
 def booking_list(request):
-    bookings = Booking.objects.all()
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    status = request.GET.get('status')
+    bookings = Booking.objects.select_related('guest', 'room').prefetch_related('payments').order_by('-check_in')
 
-    if start_date:
-        bookings = bookings.filter(check_in__gte=start_date)
-    if end_date:
-        bookings = bookings.filter(check_out__lte=end_date)
-    if status == 'checked_in':
-        bookings = bookings.filter(is_checked_in=True)
-    elif status == 'not_checked_in':
-        bookings = bookings.filter(is_checked_in=False)
+    for booking in bookings:
+        # Calculate total paid but do not override payment_status
+        booking.total_paid = sum(payment.amount for payment in booking.payments.all())
 
     return render(request, 'hotel/booking_list.html', {
         'bookings': bookings,
-        'start_date': start_date,
-        'end_date': end_date,
-        'status': status,
     })
 
 @login_required
@@ -164,13 +163,25 @@ def booking_create(request):
         booking_form = BookingForm(request.POST)
         payment_form = PaymentForm(request.POST)
 
-        if booking_form.is_valid():
+        if booking_form.is_valid() and payment_form.is_valid():
             booking = booking_form.save()
-            if payment_form.is_valid() and any(payment_form.cleaned_data.values()):
-                payment = payment_form.save(commit=False)
-                payment.booking = booking
-                payment.save()
-            return redirect('booking_detail', pk=booking.pk)
+
+            # Auto-generate required payment info
+            amount = booking.total_price
+            transaction_id = str(uuid.uuid4())  # or use a custom format
+            payment_method = payment_form.cleaned_data.get('payment_method', 'Cash')
+
+            Payment.objects.create(
+                booking=booking,
+                amount=amount,
+                payment_date=timezone.now(),  # Set internally, not from form
+                payment_method=payment_method,
+                transaction_id=transaction_id
+            )
+
+            messages.success(request, 'Booking and payment created successfully.')
+            return redirect('dashboard')
+
     else:
         booking_form = BookingForm()
         payment_form = PaymentForm()
@@ -180,22 +191,30 @@ def booking_create(request):
         'payment_form': payment_form,
     })
 
+
+
+
 @login_required
 def booking_detail(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     return render(request, 'hotel/booking_detail.html', {'booking': booking})
 
+
 @login_required
-def booking_edit(request, pk):
-    booking = get_object_or_404(Booking, pk=pk)
-    form = BookingForm(request.POST or None, instance=booking)
-
-    if form.is_valid():
-        form.save()
-        return redirect('booking_list')
-
-    return render(request, 'hotel/booking_form.html', {'form': form})
-
+@login_required
+def booking_edit(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    if request.method == 'POST':
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            # Check if the payment status was manually changed
+            manual_override = 'payment_status' in form.changed_data
+            booking.update_payment_status(manual_override=manual_override)
+            return redirect('booking_list')  # Redirect back to the booking list
+    else:
+        form = BookingForm(instance=booking)
+    return render(request, 'hotel/booking_edit.html', {'form': form, 'booking': booking})
 
 @login_required
 def booking_delete(request, pk):
@@ -321,38 +340,6 @@ def revenue_report(request):
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
 
-    bookings = Booking.objects.select_related('room').all()
-
-    try:
-        if start_date_str:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            bookings = bookings.filter(check_in__gte=start_date)
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-            bookings = bookings.filter(check_out__lte=end_date)
-    except ValueError:
-        start_date = end_date = None
-
-    total_bookings = bookings.count()
-    total_revenue = sum(b.total_price for b in bookings)
-    avg_revenue = total_revenue / total_bookings if total_bookings > 0 else 0
-
-    return render(request, 'hotel/revenue_report.html', {
-        'start_date': start_date_str,
-        'end_date': end_date_str,
-        'total_bookings': total_bookings,
-        'total_revenue': total_revenue,
-        'avg_revenue': avg_revenue,
-    })
-
-
-
-
-@login_required
-def revenue_report(request):
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-
     start_date = end_date = None
     payments = Payment.objects.filter(is_paid=True).select_related('booking')
 
@@ -380,9 +367,6 @@ def revenue_report(request):
     })
 
 
-
-
-
 # =======================
 # 🔹 PAYMENTS
 # =======================
@@ -402,6 +386,28 @@ def create_or_update_payment(request, booking_id):
         form = PaymentForm(instance=payment)
 
     return render(request, 'hotel/payment_form.html', {'form': form, 'booking': booking})
+
+
+@login_required
+def create_payment(request, booking_id):
+    booking = get_object_or_404(Booking, pk=booking_id)
+
+    if request.method == 'POST':
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            payment.booking = booking  # Associate the payment with the booking
+            payment.save()
+            booking.update_payment_status()  # Update payment status after adding payment
+            messages.success(request, f"Payment successfully added for booking #{booking.id}.")
+            return redirect('booking_detail', pk=booking.id)
+    else:
+        form = PaymentForm()
+
+    return render(request, 'hotel/create_payment.html', {'form': form, 'booking': booking})
+
+
+
 
 
 
