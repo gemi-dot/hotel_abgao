@@ -16,7 +16,8 @@ urlpatterns = [
 
     # Bookings
     path('bookings/', views.booking_list, name='booking_list'),
-    path('booking/create/', create_booking, name='create_booking'),  # Use the new booking creation view
+    
+    path('booking/create/', create_booking, name='create_booking'),
     path('bookings/<int:pk>/', views.booking_detail, name='booking_detail'),
     path('bookings/<int:booking_id>/edit/', views.booking_edit, name='booking_edit'),
     path('bookings/<int:pk>/delete/', views.booking_delete, name='booking_delete'),
@@ -24,7 +25,8 @@ urlpatterns = [
     path('bookings/<int:pk>/toggle-check-in/', views.toggle_check_in, name='toggle_check_in'),
     path('bookings/<int:booking_id>/mark-paid/', views.mark_as_paid, name='mark_as_paid'),
 
-    # Payments
+    # filepath: /Users/macbookpro/hotel_abgao/hotel/urls.py
+   
     path('bookings/<int:booking_id>/payment/', views.create_payment, name='create_payment'),
 
     # Reports

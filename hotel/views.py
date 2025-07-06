@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+
+from django.utils.timezone import now
 import uuid
 
 from django.contrib import messages
@@ -429,12 +431,18 @@ def create_payment(request, booking_id):
     return render(request, 'hotel/create_payment.html', {'form': form, 'booking': booking})
 
 
+
+@login_required
 def toggle_check_in(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
-    booking.is_checked_in = not booking.is_checked_in  # Toggle the check-in status
-    booking.save()
+    today = now().date()
+
+    # Restrict check-in toggle to valid dates
+    if today >= booking.check_in and today <= booking.check_out:
+        booking.is_checked_in = not booking.is_checked_in  # Toggle the check-in status
+        booking.save()
+        messages.success(request, f"Booking #{booking.id} check-in status updated.")
+    else:
+        messages.error(request, f"Booking #{booking.id} cannot be checked in. Invalid date range.")
+
     return redirect('booking_list')  # Redirect back to the booking list
-
-
-
-

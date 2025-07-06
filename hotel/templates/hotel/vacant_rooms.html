@@ -30,7 +30,8 @@
                         <h5 class="card-title">Room {{ room.number }}</h5>
                         <p class="card-text">Type: {{ room.get_type_display }}</p>
                         <p class="card-text">Price: Php {{ room.price }}</p>
-                        <a href="{% url 'booking_create' %}?room_id={{ room.id }}" class="btn btn-primary btn-sm">Book Now</a>
+                        
+                        <a href="{% url 'create_booking' %}" class="btn btn-primary">Create Booking</a>
                     </div>
                 </div>
             </div>
