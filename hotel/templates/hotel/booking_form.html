@@ -1,14 +1,46 @@
-{% extends "hotel/base.html" %}
+{% extends 'hotel/base.html' %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Create New Booking</h2>
-
-    <form method="post">
+    <h2 class="mb-4">Create New Booking</h2>
+    <form method="post" class="needs-validation" novalidate>
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Save Booking</button>
-        <a href="{% url 'booking_history' %}" class="btn btn-secondary">Cancel</a>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="guest" class="form-label">Guest</label>
+                <select name="guest" id="guest" class="form-select" required>
+                    <option value="">Select Guest</option>
+                    {% for guest in guests %}
+                        <option value="{{ guest.id }}">{{ guest.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a guest.</div>
+            </div>
+            <div class="col-md-6">
+                <label for="room" class="form-label">Room</label>
+                <select name="room" id="room" class="form-select" required>
+                    <option value="">Select Room</option>
+                    {% for room in rooms %}
+                        <option value="{{ room.id }}">{{ room.number }} - {{ room.get_room_type_display }}</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a room.</div>
+            </div>
+            <div class="col-md-6">
+                <label for="check_in" class="form-label">Check-In</label>
+                <input type="date" name="check_in" id="check_in" class="form-control" required>
+                <div class="invalid-feedback">Please provide a check-in date.</div>
+            </div>
+            <div class="col-md-6">
+                <label for="check_out" class="form-label">Check-Out</label>
+                <input type="date" name="check_out" id="check_out" class="form-control" required>
+                <div class="invalid-feedback">Please provide a check-out date.</div>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save Booking</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-dark">Back to Dashboard</a>
+        </div>
     </form>
 </div>
 {% endblock %}

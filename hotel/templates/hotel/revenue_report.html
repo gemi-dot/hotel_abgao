@@ -1,29 +1,31 @@
-
 {% extends 'hotel/base.html' %}
 
 {% block content %}
 <div class="container mt-4">
     <h2>💰 Revenue Report</h2>
-
     <form method="get" class="row g-3 mb-4">
         <div class="col-md-3">
-            <label class="form-label">From</label>
-            <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+            <label for="start_date" class="form-label">From</label>
+            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
         </div>
         <div class="col-md-3">
-            <label class="form-label">To</label>
-            <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+            <label for="end_date" class="form-label">To</label>
+            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
         </div>
-        <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary">Filter</button>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary mt-4 w-100">Filter</button>
         </div>
     </form>
 
-    <h4>Total Revenue: ₱{{ total_revenue|floatformat:2 }}</h4>
-    <h4>Total Bookings: {{ total_bookings }}</h4>
-    <h4>Average Revenue per Booking: ₱{{ avg_revenue|floatformat:2 }}</h4>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-dark mb-3">Back to Dashboard</a>
 
-    <table class="table table-striped mt-3">
+    <div class="mb-4">
+        <h4>Total Revenue: ₱{{ total_revenue|floatformat:2 }}</h4>
+        <h4>Total Bookings: {{ total_bookings }}</h4>
+        <h4>Average Revenue per Booking: ₱{{ average_revenue|floatformat:2 }}</h4>
+    </div>
+
+    <table class="table table-striped">
         <thead>
             <tr>
                 <th>Transaction ID</th>
@@ -37,7 +39,7 @@
             {% for payment in payments %}
             <tr>
                 <td>{{ payment.transaction_id }}</td>
-                <td>{{ payment.booking.guest.name }} - Room {{ payment.booking.room.number }}</td>
+                <td>{{ payment.booking.id }}</td>
                 <td>₱{{ payment.amount|floatformat:2 }}</td>
                 <td>{{ payment.payment_method }}</td>
                 <td>{{ payment.payment_date|date:"M d, Y" }}</td>

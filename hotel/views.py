@@ -153,52 +153,37 @@ def vacant_rooms(request):
 
 
 @login_required
+
+
+@login_required
 def booking_list(request):
-    bookings = Booking.objects.select_related('guest', 'room').prefetch_related('payments').order_by('-check_in')
-
-    for booking in bookings:
-        # Calculate total paid but do not override payment_status
-        booking.total_paid = sum(payment.amount for payment in booking.payments.all())
-
-    return render(request, 'hotel/booking_list.html', {
-        'bookings': bookings,
-    })
-
+    bookings = Booking.objects.select_related('guest', 'room').all().order_by('-check_in')
+    paginator = Paginator(bookings, 10)  # Show 10 bookings per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'hotel/booking_list.html', {'bookings': page_obj})
+@login_required
 @login_required
 def booking_create(request):
     if request.method == 'POST':
-        booking_form = BookingForm(request.POST)
-        payment_form = PaymentForm(request.POST)
-
-        if booking_form.is_valid() and payment_form.is_valid():
-            booking = booking_form.save()
-
-            # Auto-generate required payment info
-            amount = booking.total_price
-            transaction_id = str(uuid.uuid4())  # or use a custom format
-            payment_method = payment_form.cleaned_data.get('payment_method', 'Cash')
-
-            Payment.objects.create(
-                booking=booking,
-                amount=amount,
-                payment_date=timezone.now(),  # Set internally, not from form
-                payment_method=payment_method,
-                transaction_id=transaction_id
-            )
-
-            messages.success(request, 'Booking and payment created successfully.')
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.total_price = booking.compute_total_price()  # Compute total price
+            booking.save()
+            messages.success(request, "Booking created successfully!")
             return redirect('dashboard')
-
     else:
-        booking_form = BookingForm()
-        payment_form = PaymentForm()
+        form = BookingForm()
+
+    guests = Guest.objects.all()
+    rooms = Room.objects.filter(is_available=True)
 
     return render(request, 'hotel/booking_form.html', {
-        'booking_form': booking_form,
-        'payment_form': payment_form,
+        'form': form,
+        'guests': guests,
+        'rooms': rooms,
     })
-
-
 
 
 @login_required
@@ -436,6 +421,7 @@ def create_payment(request, booking_id):
 
 
 @login_required
+
 def toggle_check_in(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     today = now().date()
@@ -449,7 +435,6 @@ def toggle_check_in(request, pk):
         messages.error(request, f"Booking #{booking.id} cannot be checked in. Invalid date range.")
 
     return redirect('booking_list')  # Redirect back to the booking list
-
 
 @login_required
 def guest_create(request):
