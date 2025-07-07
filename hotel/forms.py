@@ -2,6 +2,12 @@ from django import forms
 from .models import Room, Booking
 
 from .models import Payment
+from .models import Guest
+
+class GuestForm(forms.ModelForm):
+    class Meta:
+        model = Guest
+        fields = ['name', 'email', 'phone', 'address', 'date_of_birth', 'notes']
 
 class RoomForm(forms.ModelForm):
     class Meta:

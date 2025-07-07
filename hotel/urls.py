@@ -29,6 +29,16 @@ urlpatterns = [
    
     path('bookings/<int:booking_id>/payment/', views.create_payment, name='create_payment'),
 
+    path('guests/create/', views.guest_create, name='guest_create'),
+
+    
+    path('guests/', views.guest_list, name='guest_list'),
+
+    path('guests/<int:pk>/edit/', views.guest_edit, name='guest_edit'),
+    path('guests/<int:pk>/delete/', views.guest_delete, name='guest_delete'),
+
+
+
     # Reports
     path('booking/history/', booking_history, name='booking_history'),
     path('reports/booking-summary/', views.booking_summary, name='booking_summary'),

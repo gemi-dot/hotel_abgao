@@ -6,10 +6,11 @@ class Guest(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=20, blank=True, null=True)  # Allow blank for optional phone
     address = models.TextField(blank=True, null=True)  # Allow blank for optional address
+    date_of_birth = models.DateField(blank=True, null=True)  # Optional date of birth
+    notes = models.TextField(blank=True, null=True)  # Optional notes about the guest
 
     def __str__(self):
         return self.name
-
 
 class Room(models.Model):
     ROOM_TYPES = (
@@ -25,7 +26,6 @@ class Room(models.Model):
 
     def __str__(self):
         return f"Room {self.number} ({self.room_type})"
-
 
 class Booking(models.Model):
     PAYMENT_STATUSES = [

@@ -23,6 +23,9 @@ import uuid
 from .models import Booking
 
 
+from .forms import GuestForm
+
+from .models import Guest
 
 
 
@@ -446,3 +449,43 @@ def toggle_check_in(request, pk):
         messages.error(request, f"Booking #{booking.id} cannot be checked in. Invalid date range.")
 
     return redirect('booking_list')  # Redirect back to the booking list
+
+
+@login_required
+def guest_create(request):
+    if request.method == 'POST':
+        form = GuestForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Guest added successfully!")
+            return redirect('guest_list')  # Redirect to guest list
+    else:
+        form = GuestForm()
+    return render(request, 'hotel/guest_form.html', {'form': form})
+
+@login_required
+def guest_list(request):
+    guests = Guest.objects.all()
+    return render(request, 'hotel/guest_list.html', {'guests': guests})
+
+@login_required
+def guest_edit(request, pk):
+    guest = get_object_or_404(Guest, pk=pk)
+    if request.method == 'POST':
+        form = GuestForm(request.POST, instance=guest)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Guest updated successfully!")
+            return redirect('guest_list')
+    else:
+        form = GuestForm(instance=guest)
+    return render(request, 'hotel/guest_form.html', {'form': form, 'guest': guest})
+
+@login_required
+def guest_delete(request, pk):
+    guest = get_object_or_404(Guest, pk=pk)
+    if request.method == 'POST':
+        guest.delete()
+        messages.success(request, "Guest deleted successfully!")
+        return redirect('guest_list')
+    return render(request, 'hotel/guest_confirm_delete.html', {'guest': guest})
